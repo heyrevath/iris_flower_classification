@@ -38,9 +38,9 @@ log_reg = LogisticRegression(n_jobs = -1)
 log_reg.fit(X_train, y_train)
 
 # Create a function 'prediction()' which accepts model, SepalLength, SepalWidth, PetalLength, PetalWidth as input and returns species name.
-@st.cache()
-def prediction(model, sepal_length, sepal_width, petal_length, petal_width):
-  	species = model.predict([[sepal_length, sepal_width, petal_length, petal_width]])
+@st.cache_data
+def prediction(_model, sepal_length, sepal_width, petal_length, petal_width):
+  	species = _model.predict([[sepal_length, sepal_width, petal_length, petal_width]])
   	species = species[0]
   	if species == 0:
   		return "Iris-setosa"
@@ -77,7 +77,7 @@ if st.sidebar.button("Predict"):
 	
 	else:
 		species_type = prediction(rf_clf, s_len, s_wid, p_len, p_wid)
-		score = rf_clf.score(X_train, y_train)
+		score = rf_clf.score(X_test, y_test)
 	
 	st.write("Species predicted:", species_type)
 	st.write("Accuracy score of this model is:", score)
