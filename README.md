@@ -49,4 +49,4 @@ using supervised machine learning techniques.
 - Pandas
 - Scikit-learn
 - Flask / Streamlit (app-based deployment)
-- Gunicorn (for deployment support)
+
