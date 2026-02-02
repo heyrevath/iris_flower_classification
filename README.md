@@ -42,6 +42,16 @@ using supervised machine learning techniques.
 
 ---
 
+
+## How to Run Locally
+1. Clone the repository
+2. Install dependencies:
+   pip install -r requirements.txt
+3. Run the app:
+   python3 -m streamlit run improved_iris_app.py
+
+---
+
 ## Technologies Used
 
 - Python
