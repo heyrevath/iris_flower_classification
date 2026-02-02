@@ -1,83 +1,93 @@
-# Importing the necessary libraries.
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 import streamlit as st
+import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
-from sklearn.linear_model import LogisticRegression  
+from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 
-# Loading the dataset.
-iris_df = pd.read_csv("iris-species.csv")
+st.set_page_config(page_title="Iris Flower Classifier", page_icon="🌸")
 
-# Adding a column in the Iris DataFrame to resemble the non-numeric 'Species' column as numeric using 'map()' function.
-# Creating the numeric target column 'Label' to 'iris_df' using 'map()'.
-iris_df['Label'] = iris_df['Species'].map({'Iris-setosa': 0, 'Iris-virginica': 1, 'Iris-versicolor':2})
-
-# Creating a model for Support Vector classification to classify the flower types into labels '0' , '1', and '2'.
-
-# Creating X and y variables
-X = iris_df[['SepalLengthCm','SepalWidthCm', 'PetalLengthCm', 'PetalWidthCm']]
-y = iris_df['Label']
-
-# Spliting the data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.33, random_state = 42)
-
-# Creating the SVC model 
-svc_model = SVC(kernel = 'linear')
-svc_model.fit(X_train, y_train)
-
-# Creating the Logistic Regression model 
-rf_clf = RandomForestClassifier(n_jobs = -1, n_estimators = 100)
-rf_clf.fit(X_train, y_train)
-
-# Creating the Random Forest Classifier model 
-log_reg = LogisticRegression(n_jobs = -1)
-log_reg.fit(X_train, y_train)
-
-# Create a function 'prediction()' which accepts model, SepalLength, SepalWidth, PetalLength, PetalWidth as input and returns species name.
+# ---------- Load Data ----------
 @st.cache_data
-def prediction(_model, sepal_length, sepal_width, petal_length, petal_width):
-  	species = _model.predict([[sepal_length, sepal_width, petal_length, petal_width]])
-  	species = species[0]
-  	if species == 0:
-  		return "Iris-setosa"
-  	elif species == 1:
-  		return "Iris-virginica"
-  	else:
-  		return "Iris-versicolor"
+def load_data():
+    return pd.read_csv("iris-species.csv")
 
-# Add title widget
-st.sidebar.title("Iris Flower Species Prediction App")      
+iris_df = load_data()
 
-# Add 4 sliders and store the value returned by them in 4 separate variables. 
-s_len = st.sidebar.slider("Sepal Length", float(iris_df["SepalLengthCm"].min()), float(iris_df["SepalLengthCm"].max()))
-s_wid = st.sidebar.slider("Sepal Width", float(iris_df["SepalWidthCm"].min()), float(iris_df["SepalWidthCm"].max()))
-p_len = st.sidebar.slider("Petal Length", float(iris_df["PetalLengthCm"].min()), float(iris_df["PetalLengthCm"].max()))
-p_wid = st.sidebar.slider("Petal Width", float(iris_df["PetalWidthCm"].min()), float(iris_df["PetalWidthCm"].max()))
+iris_df["Label"] = iris_df["Species"].map({
+    "Iris-setosa": 0,
+    "Iris-virginica": 1,
+    "Iris-versicolor": 2
+})
 
-# Add a select box in the sidebar with label 'Classifier' 
-# and with 3 options passed as a tuple ('Support Vector Machine', 'Logistic Regression', 'Random Forest Classifier').
-# Store the current value of this slider in a variable 'classifier'.
-classifier = st.sidebar.selectbox("Classifier", ('Support Vector Machine', 'Logistic Regression', 'Random Forest Classifier'))
+X = iris_df[[
+    "SepalLengthCm",
+    "SepalWidthCm",
+    "PetalLengthCm",
+    "PetalWidthCm"
+]]
+y = iris_df["Label"]
 
-# when 'Predict' button is clicked, check which classifier is chosen and call 'prediction()' function.
-# Store the predicted in a variable 'species_type' accuracy score of model in 'score' variable. 
-# Print the value of 'species_type' and 'score' variable using 'st.text()' function.
-if st.sidebar.button("Predict"):
-	if classifier =='Support Vector Machine':
-		species_type = prediction(svc_model, s_len, s_wid, p_len, p_wid)
-		score = svc_model.score(X_train, y_train)
-	
-	elif classifier =='Logistic Regression':
-		species_type = prediction(log_reg, s_len, s_wid, p_len, p_wid)
-		score = log_reg.score(X_train, y_train)
-	
-	else:
-		species_type = prediction(rf_clf, s_len, s_wid, p_len, p_wid)
-		score = rf_clf.score(X_test, y_test)
-	
-	st.write("Species predicted:", species_type)
-	st.write("Accuracy score of this model is:", score)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.33, random_state=42
+)
+
+# ---------- Train Models ----------
+@st.cache_resource
+def train_models():
+    svc = SVC(kernel="linear")
+    svc.fit(X_train, y_train)
+
+    log_reg = LogisticRegression(max_iter=1000)
+    log_reg.fit(X_train, y_train)
+
+    rf = RandomForestClassifier(n_estimators=100, n_jobs=-1)
+    rf.fit(X_train, y_train)
+
+    return svc, log_reg, rf
+
+svc_model, log_reg_model, rf_model = train_models()
+
+# ---------- Prediction ----------
+def predict_species(model, sl, sw, pl, pw):
+    label = model.predict([[sl, sw, pl, pw]])[0]
+    return {
+        0: "Iris-setosa",
+        1: "Iris-virginica",
+        2: "Iris-versicolor"
+    }[label]
+
+# ---------- UI ----------
+st.title("🌸 Iris Flower Species Prediction")
+st.write("Enter flower measurements and choose a classifier.")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    s_len = st.slider("Sepal Length", float(X["SepalLengthCm"].min()), float(X["SepalLengthCm"].max()))
+    p_len = st.slider("Petal Length", float(X["PetalLengthCm"].min()), float(X["PetalLengthCm"].max()))
+
+with col2:
+    s_wid = st.slider("Sepal Width", float(X["SepalWidthCm"].min()), float(X["SepalWidthCm"].max()))
+    p_wid = st.slider("Petal Width", float(X["PetalWidthCm"].min()), float(X["PetalWidthCm"].max()))
+
+classifier = st.selectbox(
+    "Choose Classifier",
+    ("Support Vector Machine", "Logistic Regression", "Random Forest")
+)
+
+if st.button("🔮 Predict"):
+    if classifier == "Support Vector Machine":
+        model = svc_model
+        accuracy = model.score(X_test, y_test)
+    elif classifier == "Logistic Regression":
+        model = log_reg_model
+        accuracy = model.score(X_test, y_test)
+    else:
+        model = rf_model
+        accuracy = model.score(X_test, y_test)
+
+    species = predict_species(model, s_len, s_wid, p_len, p_wid)
+
+    st.success(f"🌼 Predicted Species: **{species}**")
+    st.info(f"📊 Model Accuracy: **{accuracy:.2f}**")
